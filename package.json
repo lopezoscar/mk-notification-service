@@ -1,18 +1,19 @@
 {
   "name": "mk-notification-service",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "",
   "main": "app.js",
   "scripts": {
     "test": "jest",
+    "test:coverage": "jest --coverage --collectCoverageFrom=./src/**",
     "invokeProcessNotifications": "sam local invoke ProcessNotificationsFunction --event events/notifications-news-success.json --env-vars env.json --log-file notification-service.log"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/lopezoscar/mk-notification-service.git"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Oscar López",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/lopezoscar/mk-notification-service/issues"
   },
@@ -29,7 +30,6 @@
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.312.0",
-    "@aws-sdk/client-sqs": "^3.312.0",
-    "@aws-sdk/util-dynamodb": "^3.312.0"
+    "@aws-sdk/client-sqs": "^3.312.0"
   }
 }
