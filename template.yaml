@@ -23,6 +23,7 @@ Globals:
       Variables:
         NODE_ENV: !Sub ${Environment}
         TABLE_PREFIX: !Sub "${MicroserviceName}-${Environment}"
+        NOTIFICATIONS_QUEUE_URL: !Ref NotificationServiceQueue
 
 Resources:
   NotificationServiceQueue:

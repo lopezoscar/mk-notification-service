@@ -1,4 +1,5 @@
-const { PutItemCommand } = require('@aws-sdk/client-dynamodb')
+const { PutItemCommand, QueryCommand } = require('@aws-sdk/client-dynamodb')
+
 const NOTIFICATIONS_TABLE = `${process.env.TABLE_PREFIX}-notifications`
 
 class NotificationModel {
@@ -11,6 +12,7 @@ class NotificationModel {
       TableName: NOTIFICATIONS_TABLE,
       Item: {
         id: { S: id },
+        recipientAndType: { S: `${recipient}#${type}` },
         type: { S: type },
         sender: { S: sender },
         recipient: { S: recipient },
@@ -20,6 +22,17 @@ class NotificationModel {
       }
     })
     return this.db.send(command)
+  }
+
+  async getNotificationsByRecipientAndTypeSorteByCreatedAt ({ recipient, type, createdAt }) {
+    const command = new QueryCommand({
+      TableName: NOTIFICATIONS_TABLE,
+      IndexName: 'RecipientAndTypeAndCreatedAtIndex',
+      KeyConditionExpression: 'recipientAndType=:recipientAndType and createdAt >= :createdAt',
+      ExpressionAttributeValues: { ':recipientAndType': { S: `${recipient}#${type}` }, ':createdAt': { N: createdAt } }
+    })
+    const { Items } = await this.db.send(command)
+    return Items
   }
 }
 

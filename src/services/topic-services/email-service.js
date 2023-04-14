@@ -11,7 +11,7 @@ class EmailService {
     if (!message) {
       throw new ValidationError('message is required')
     }
-    console.log('SIMLATING sending email to SNS Email Service', sender, recipient, message)
+    console.log('SIMULATING sending email to SNS Email Service', sender, recipient, message)
     return Promise.resolve({ message, topic: 'sns-email-topic' })
   }
 }

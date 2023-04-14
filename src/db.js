@@ -7,11 +7,9 @@ if (process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'development') {
 }
 
 if (process.env.AWS_SAM_LOCAL) {
-  console.log('SAM LOCAL')
   dbOpts.endpoint = 'http://host.docker.internal:8000'
 }
 
 module.exports.connect = () => {
-  console.log(dbOpts)
   return new DynamoDBClient(dbOpts)
 }

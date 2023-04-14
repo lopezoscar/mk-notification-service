@@ -5,7 +5,7 @@ class PushNotificationService {
     if (!message) {
       throw new ValidationError('message is required')
     }
-    console.log('SIMLATING sending push notification to SNS', message)
+    console.log('SIMULATING sending push notification to SNS', message)
     return Promise.resolve({ message, topic: 'sns-push-notifications-topic' })
   }
 }

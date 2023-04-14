@@ -1,14 +1,14 @@
-const InternalServerError = require('../errors/InternalServerError')
 const { v4: uuid } = require('uuid')
 
 class NotificationService {
-  constructor ({ models, emailService, pushNotificationService }) {
+  constructor ({ models, emailService, pushNotificationService, rateLimitService }) {
     this.models = models
 
     this.notificationServiceByTopicType = {
       email: emailService,
       push: pushNotificationService
     }
+    this.rateLimitService = rateLimitService
   }
 
   async sendNotification (newNotification) {
@@ -16,17 +16,18 @@ class NotificationService {
     const notification = newNotification.body
 
     const topicService = this.notificationServiceByTopicType[notification.topicType]
-    try {
-      console.log('saving notification')
-      await notificationModel.saveNotification({ id: uuid(), ...notification, createdAt: Date.now() })
-      console.log('notification stored')
-      console.log('sending event to SNS Topic')
-      await topicService.send(notification)
-      console.log('event sent')
-    } catch (error) {
-      console.log('TODO send by SNS error', error)
-      throw new InternalServerError(error)
-    }
+
+    await this.rateLimitService.checkLimit(notification)
+    console.log('RATE LIMIT PASSED')
+
+    await topicService.send(notification)
+    console.log('notification sent')
+
+    console.log('saving notification')
+    const notificationCreated = await notificationModel.saveNotification({ id: uuid(), ...notification, createdAt: Date.now() })
+    console.log('notification created')
+
+    return notificationCreated
   }
 }
 

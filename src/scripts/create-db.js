@@ -1,6 +1,6 @@
 const { connect } = require('../db')
 const db = connect()
-const { CreateTableCommand } = require('@aws-sdk/client-dynamodb')
+const { CreateTableCommand, DeleteTableCommand } = require('@aws-sdk/client-dynamodb')
 
 const notificationsTable = {
   TableName: 'notification-service-development-notifications',
@@ -8,6 +8,10 @@ const notificationsTable = {
   AttributeDefinitions: [
     {
       AttributeName: 'id',
+      AttributeType: 'S'
+    },
+    {
+      AttributeName: 'recipientAndType',
       AttributeType: 'S'
     },
     // {
@@ -18,10 +22,10 @@ const notificationsTable = {
     //   AttributeName: 'sender',
     //   AttributeType: 'S'
     // },
-    {
-      AttributeName: 'recipient',
-      AttributeType: 'S'
-    },
+    // {
+    //   AttributeName: 'recipient',
+    //   AttributeType: 'S'
+    // },
     // {
     //   AttributeName: 'message',
     //   AttributeType: 'S'
@@ -43,10 +47,10 @@ const notificationsTable = {
   ],
   GlobalSecondaryIndexes: [
     {
-      IndexName: 'RecipientAndCreatedAtIndex',
+      IndexName: 'RecipientAndTypeAndCreatedAtIndex',
       KeySchema: [
         {
-          AttributeName: 'recipient',
+          AttributeName: 'recipientAndType',
           KeyType: 'HASH'
         },
         {
@@ -67,4 +71,14 @@ async function createTable (schema) {
   console.log(result)
 }
 
+async function deleteTable (tableName) {
+  const deleteTableCMD = new DeleteTableCommand({
+    TableName: tableName
+  })
+  const result = await db.send(deleteTableCMD)
+  console.log(result)
+  return result
+}
+
+// deleteTable('notification-service-development-notifications')
 createTable(notificationsTable)
