@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  mk-notification-service
+
+Transform:
+- AWS::Serverless-2016-10-31
+
+Parameters:
+ Environment:
+  Type: String
+ MicroserviceName:
+  Type: String
+
+Globals:
+  Function:
+    Runtime: nodejs18.x
+    Timeout: 25 # Chosen to be less than the default SQS Visibility Timeout of 30 seconds
+    MemorySize: 128
+    AutoPublishAlias: live
+    DeploymentPreference:
+      Type: Canary10Percent5Minutes
+    Environment:
+      Variables:
+        NODE_ENV: !Sub ${Environment}
+        TABLE_PREFIX: !Sub "${MicroserviceName}-${Environment}"
+
+Resources:
+  NotificationServiceQueue:
+    Type: AWS::SQS::Queue
+    QueueName: !Sub notification-service-queue-${Environment}
+    FifoQueue: true # Avoid check idempotency in messages.
+    VisibilityTimeout: 30
+    UpdateReplacePolicy": "Retain"
+    DeletionPolicy: "Delete"
+  
+  ProcessNotificationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: A Lambda function that process notifications
+      CodeUri: './'
+      Handler: app.processNotifications
+      Events:
+        SQSQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt NotificationServiceQueue.Arn
+      MemorySize: 128
+      Policies:
+        # Give Lambda basic execution Permission to the helloFromLambda
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref NotificationsTable
+  
+  NotificationsTable:
+    Type: AWS::DynamoDB::Table
+    TableName: !Sub "${MicroserviceName}-${Environment}-notifications"
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "id"
+          AttributeType: "S"
+        - AttributeName: "type"
+          AttributeType: "S"
+        - AttributeName: "sender"
+          AttributeType: "S"
+        - AttributeName: "recipient"
+          AttributeType: "S"
+        - AttributeName: "message"
+          AttributeType: "S"
+        - AttributeName: "topicType"
+          AttributeType: "S"
+        - AttributeName: "createdAt"
+          AttributeType: "N"
+      KeySchema:
+        - AttributeName: "id"
+          KeyType: "HASH"
+      BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+        - IndexName: "RecipientAndTypeIndex"
+          KeySchema:
+            - AttributeName: "recipient"
+              KeyType: "HASH"
+            - AttributeName: "type"
+              KeyType: "HASH"
+          Projection:
+            ProjectionType: "ALL"
