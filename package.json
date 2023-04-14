@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "test": "jest",
-    "invokeProcessNotifications": "sam local invoke ProcessNotificationsFunction --event events/notifications-message-success.json --env-vars env.json --log-file notification-service.log"
+    "invokeProcessNotifications": "sam local invoke ProcessNotificationsFunction --event events/notifications-news-success.json --env-vars env.json --log-file notification-service.log"
   },
   "repository": {
     "type": "git",
