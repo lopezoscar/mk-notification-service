@@ -39,7 +39,7 @@ class RateLimitService {
       return
     }
 
-    if (notifications.length === rateLimitRule.limit) {
+    if (notifications.length >= rateLimitRule.limit) {
       throw new TooManyRequestsError(`request limit reached ${rateLimitRule.limit} in ${rateLimitRule.frequencyInMinutes} minutes`)
     }
   }
