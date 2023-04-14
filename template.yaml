@@ -59,6 +59,8 @@ Resources:
       AttributeDefinitions:
         - AttributeName: "id"
           AttributeType: "S"
+        - AttributeName: "recipientAndType"
+          AttributeType: "S"
         - AttributeName: "type"
           AttributeType: "S"
         - AttributeName: "sender"
@@ -76,9 +78,9 @@ Resources:
           KeyType: "HASH"
       BillingMode: PAY_PER_REQUEST
       GlobalSecondaryIndexes:
-        - IndexName: "RecipientAndTypeIndex"
+        - IndexName: "RecipientAndTypeAndCreatedAtIndex"
           KeySchema:
-            - AttributeName: "recipient"
+            - AttributeName: "recipientAndType"
               KeyType: "HASH"
             - AttributeName: "type"
               KeyType: "HASH"

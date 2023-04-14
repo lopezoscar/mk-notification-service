@@ -24,10 +24,11 @@ class NotificationService {
     console.log('notification sent')
 
     console.log('saving notification')
-    const notificationCreated = await notificationModel.saveNotification({ id: uuid(), ...notification, createdAt: Date.now() })
+    const notificationId = uuid()
+    await notificationModel.saveNotification({ id: notificationId, ...notification, createdAt: Date.now() })
     console.log('notification created')
 
-    return notificationCreated
+    return { id: notificationId }
   }
 }
 
