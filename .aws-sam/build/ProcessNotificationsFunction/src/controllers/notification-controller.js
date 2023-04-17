@@ -41,7 +41,6 @@ class NotificationController {
       await this.notificationsQueue.deleteMessage(newNotification.receiptHandle)
       console.log('event sent')
     } catch (error) {
-      console.log(error)
       await notificationEventService.publish({ event: 'notification-error', error: error.getCode(), data: newNotification })
       // throw error to re enter to the queue
       throw error
