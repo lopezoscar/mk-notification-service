@@ -9,7 +9,6 @@ const { connect } = require('../../src/db')
 
 const modelsLayer = require('../../src/models')
 const servicesLayer = require('../../src/services')
-const { TagQueueCommand } = require('@aws-sdk/client-sqs')
 
 jest.mock('../../src/models/notification-model', () => {
   return jest.fn().mockImplementation(() => {
@@ -69,7 +68,7 @@ describe('notification-controller', () => {
       expect(result).toHaveProperty('processStatus', 'finished')
     })
 
-    test('should fail sending a notification of type status when reach the rate limit ', async () => {
+    test('should fail sending a notification of type status when reach the rate limit', async () => {
       controller = new NotificationController({
         services: {
           notificationService: {
@@ -89,7 +88,7 @@ describe('notification-controller', () => {
       const records = []
       records.push(createSQSMessage(newNotification))
 
-      await expect(controller.processNotifications({ Records: records })).resolves.toEqual({ processStatus: 'finished' })
+      await expect(controller.processNotifications({ Records: records })).rejects.toThrow('process incompleted. 1 failed - Failed messages will re enter to the SQS queue')
 
       expect(controller.services.notificationEventService.publish).toHaveBeenCalledTimes(1)
       expect(controller.services.notificationEventService.publish).toHaveBeenCalledWith({ event: 'notification-error', error: 'TOO_MANY_REQUESTS_ERROR', data: records[0] })
@@ -124,7 +123,7 @@ describe('notification-controller', () => {
       expect(controller.notificationsQueue.deleteMessage).toHaveBeenCalledTimes(3)
     })
 
-    test('should delete success messages and throw an error if some messages fail', async () => {
+    test('should delete success messages and publish an error message for messages failed', async () => {
       controller = new NotificationController({
         services: {
           notificationService: {
@@ -149,11 +148,38 @@ describe('notification-controller', () => {
         createSQSMessage({})
       ]
 
-      await expect(controller.processNotifications({ Records: records })).resolves.toEqual({ processStatus: 'finished' })
+      await expect(controller.processNotifications({ Records: records })).rejects.toThrow('process incompleted. 1 failed - Failed messages will re enter to the SQS queue')
 
-      expect(controller.notificationsQueue.deleteMessage).toHaveBeenCalledTimes(2)
       expect(controller.services.notificationService.sendNotification).toHaveBeenCalledTimes(3)
       expect(controller.services.notificationEventService.publish).toHaveBeenCalledTimes(3)
+      expect(controller.notificationsQueue.deleteMessage).toHaveBeenCalledTimes(2)
+    })
+
+    test('should delete success messages and throw an error if there is any other error not catched by sendNotification ', async () => {
+      controller = new NotificationController({
+        services: {
+          notificationService: {
+            sendNotification: jest.fn().mockResolvedValue()
+          },
+          notificationEventService: {
+            publish: jest.fn().mockResolvedValue()
+          }
+        },
+        notificationsQueue: {
+          deleteMessage: jest.fn().mockImplementation((receiptHandle) => {
+            throw new Error('Error deleting message on queue', receiptHandle)
+          })
+        }
+      })
+
+      const records = [
+        createSQSMessage({ error: true })
+      ]
+
+      await expect(controller.processNotifications({ Records: records })).rejects.toThrow('process incompleted. 1 failed - Failed messages will re enter to the SQS queue')
+
+      expect(controller.notificationsQueue.deleteMessage).toHaveBeenCalledTimes(1)
+      expect(controller.services.notificationService.sendNotification).toHaveBeenCalledTimes(1)
     })
   })
 })

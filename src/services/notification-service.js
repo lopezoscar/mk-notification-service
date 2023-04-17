@@ -1,4 +1,5 @@
 const { v4: uuid } = require('uuid')
+const ValidationError = require('../errors/ValidationError')
 
 class NotificationService {
   constructor ({ models, emailService, pushNotificationService, rateLimitService }) {
@@ -16,6 +17,10 @@ class NotificationService {
     const notification = newNotification.body
 
     const topicService = this.notificationServiceByTopicType[notification.topicType]
+
+    if (!topicService) {
+      throw new ValidationError('invalid topic type', notification.topicType)
+    }
 
     await this.rateLimitService.checkLimit(notification)
     console.log('RATE LIMIT PASSED')

@@ -1,3 +1,6 @@
+const TooManyRequestsError = require('../errors/TooManyRequestsError')
+const ValidationError = require('../errors/ValidationError')
+
 class NotificationController {
   constructor ({ services, notificationsQueue }) {
     this.services = services
@@ -18,10 +21,10 @@ class NotificationController {
     const promises = records.map((newNotification) => this.sendNotification(newNotification))
     const results = await Promise.allSettled(promises)
 
-    const rejectedNotifications = results.filter(result => result.status.rejected)
+    const rejectedNotifications = results.filter(result => result.status === 'rejected')
 
     if (rejectedNotifications.length > 0) {
-      throw new Error(`process partially completed. ${rejectedNotifications.length} failed - Failed messages will re enter to the SQS queue`)
+      throw new Error(`process incompleted. ${rejectedNotifications.length} failed - Failed messages will re enter to the SQS queue`)
     }
     return { processStatus: 'finished' }
   }
@@ -38,8 +41,9 @@ class NotificationController {
       await this.notificationsQueue.deleteMessage(newNotification.receiptHandle)
       console.log('event sent')
     } catch (error) {
-      console.log('send notification error', error)
       await notificationEventService.publish({ event: 'notification-error', error: error.getCode(), data: newNotification })
+      // throw error to re enter to the queue
+      throw error
     }
   }
 }
