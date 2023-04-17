@@ -24,7 +24,7 @@ class NotificationModel {
     return this.db.send(command)
   }
 
-  async getNotificationsByRecipientAndTypeSorteByCreatedAt ({ recipient, type, createdAt }) {
+  async getNotificationsByRecipientAndTypeSortedByCreatedAt ({ recipient, type, createdAt }) {
     const command = new QueryCommand({
       TableName: NOTIFICATIONS_TABLE,
       IndexName: 'RecipientAndTypeAndCreatedAtIndex',

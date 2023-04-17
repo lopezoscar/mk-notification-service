@@ -32,16 +32,18 @@ class RateLimitService {
 
     const startTS = Date.now() - rateLimitRule.frequencyInMinutes * 60 * 1000
 
-    const notifications = await notificationModel.getNotificationsByRecipientAndTypeSorteByCreatedAt({ recipient, type, createdAt: startTS })
+    const notifications = await notificationModel.getNotificationsByRecipientAndTypeSortedByCreatedAt({ recipient, type, createdAt: startTS })
     console.log('notifications', notifications)
     if (!notifications || notifications.length === 0) {
       // no notifications - valid limit
-      return
+      return { valid: true }
     }
 
     if (notifications.length >= rateLimitRule.limit) {
       throw new TooManyRequestsError(`request limit reached ${rateLimitRule.limit} in ${rateLimitRule.frequencyInMinutes} minutes`)
     }
+
+    return { valid: true }
   }
 }
 
