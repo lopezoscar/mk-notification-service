@@ -5,7 +5,7 @@ class NotificationController {
   }
 
   /**
-   * If a Lambda function returns a success response, SQS will delete the message
+   * If a Lambda function returns a success response, SQS will delete all the messages
    * but if some of the messages are ok and others fail, you have to delete the success messages from the queue
    * to not enter again those messages to the queue
    * and return an error to enter only the failed messages
@@ -18,14 +18,12 @@ class NotificationController {
     const promises = records.map((newNotification) => this.sendNotification(newNotification))
     const results = await Promise.allSettled(promises)
 
-    const messagesToDelete = this._getMessagesToDelete({ results, records })
-    await this._removeFromQueue(messagesToDelete)
+    const rejectedNotifications = results.filter(result => result.status.rejected)
 
-    const processIncompleted = messagesToDelete.length !== records.length
-
-    if (processIncompleted) {
-      throw new Error(`process partially completed. ${records.length - messagesToDelete.length} failed - Failed messages will re enter to the SQS queue`)
+    if (rejectedNotifications.length > 0) {
+      throw new Error(`process partially completed. ${rejectedNotifications.length} failed - Failed messages will re enter to the SQS queue`)
     }
+    return { processStatus: 'finished' }
   }
 
   async sendNotification (newNotification) {
@@ -36,26 +34,13 @@ class NotificationController {
 
       console.log('sending event to SNS Topic')
       await notificationEventService.publish({ event: 'notification-created', notification })
+
+      await this.notificationsQueue.deleteMessage(newNotification.receiptHandle)
       console.log('event sent')
     } catch (error) {
       console.log('send notification error', error)
       await notificationEventService.publish({ event: 'notification-error', error: error.getCode(), data: newNotification })
     }
-  }
-
-  _getMessagesToDelete ({ results = [], records = [] }) {
-    const messagesToDelete = results.reduce((messagesSent, result, i) => {
-      if (result.status === 'fulfilled') {
-        messagesSent.push(records[i].receiptHandle)
-      }
-      return messagesSent
-    }, [])
-    return messagesToDelete
-  }
-
-  async _removeFromQueue (messagesToDelete) {
-    const promises = messagesToDelete.map((receiptHandle) => this.notificationsQueue.deleteMessage(receiptHandle))
-    return Promise.all(promises)
   }
 }
 
