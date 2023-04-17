@@ -3,7 +3,6 @@ const timeMock = require('timekeeper')
 
 describe('RateLimitService', () => {
   let service
-  let dateNowSpy
 
   beforeAll(() => {
     const time = new Date(1681748223475)
